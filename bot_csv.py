@@ -2,6 +2,7 @@
 from flask import Flask, request, jsonify
 import pandas as pd
 import difflib
+import re  # これが大事！正しく動かすためには必要な追加
 
 app = Flask(__name__)
 
@@ -15,21 +16,21 @@ def health_check():
 @app.route("/bot", methods=["POST"])
 def bot_response():
     data = request.json
-import re  # ← これがまだ上に無ければ、3行目あたりに追加
 
-user_text = data.get("content", {}).get("text", "").strip()
-user_text = re.sub(r"\s+", "", user_text)  # スペースや改行を取り除く
+    # ユーザーの発言を取り出す（空白や記号もきれいにする）
+    user_text = data.get("content", {}).get("text", "").strip()
+    user_text = re.sub(r"\s+", "", user_text)  # スペースや改行などを削除
 
-    # 初期応答（マッチしない場合）
-    reply = "恐れ入りますが、該当する回答が見つかりませんでした。"
+    # 初期の返答（見つからなかったとき）
+    reply = "ごめんなさい、該当する回答が見つかりませんでした。"
 
     if not user_text:
         return jsonify({"content": {"type": "text", "text": reply}})
 
-    # 質問リスト取得
+    # 質問だけのリストを作成
     questions = faq_df["質問"].tolist()
 
-    # 類似度でマッチする質問を検索（cutoff=0.6で調整可能）
+    # 質問と近い言葉を見つける（0.4以上の点数で探す）
     match = difflib.get_close_matches(user_text, questions, n=1, cutoff=0.4)
 
     if match:
