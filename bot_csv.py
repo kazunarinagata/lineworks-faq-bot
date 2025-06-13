@@ -15,7 +15,10 @@ def health_check():
 @app.route("/bot", methods=["POST"])
 def bot_response():
     data = request.json
-    user_text = data.get("content", {}).get("text", "").strip()
+import re  # ← これがまだ上に無ければ、3行目あたりに追加
+
+user_text = data.get("content", {}).get("text", "").strip()
+user_text = re.sub(r"\s+", "", user_text)  # スペースや改行を取り除く
 
     # 初期応答（マッチしない場合）
     reply = "恐れ入りますが、該当する回答が見つかりませんでした。"
@@ -27,7 +30,7 @@ def bot_response():
     questions = faq_df["質問"].tolist()
 
     # 類似度でマッチする質問を検索（cutoff=0.6で調整可能）
-    match = difflib.get_close_matches(user_text, questions, n=1, cutoff=0.6)
+    match = difflib.get_close_matches(user_text, questions, n=1, cutoff=0.4)
 
     if match:
         matched_row = faq_df[faq_df["質問"] == match[0]]
